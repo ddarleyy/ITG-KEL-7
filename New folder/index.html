@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CC CUP XLI - FairPlay Smart Portal (Mayan Edition)</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        maya: {
+                            50: '#fffdf8',  // Ivory White
+                            100: '#f9f6ee', // Warm Sand Parchment
+                            200: '#f1e8d0', // Sandstone
+                            300: '#e3d2aa', // Golden Ochre Light
+                            400: '#d97706', // Ochre Amber
+                            500: '#b45309', // Deep Amber
+                            600: '#9a3412', // Terracotta Red Accent
+                            700: '#7c2d12', // Deep Clay
+                            800: '#4a200e', // Dark Brown Border
+                            900: '#2a170c', // Deep Warm Espresso Text
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts & FontAwesome -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Firebase SDK (Compat Version) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #f9f6ee;
+            color: #2a170c;
+        }
+        .font-cinzel { font-family: 'Cinzel', serif; }
+        .maya-border-pattern {
+            background-image: repeating-linear-gradient(90deg, #9a3412 0, #9a3412 14px, #f9f6ee 14px, #f9f6ee 20px, #d97706 20px, #d97706 34px, #f9f6ee 34px, #f9f6ee 40px);
+            height: 8px;
+        }
+        .maya-card {
+            background-color: #fffdf8;
+            border: 1.5px solid #e3d2aa;
+            box-shadow: 0 4px 18px -2px rgba(74, 32, 14, 0.06), 0 2px 6px -1px rgba(74, 32, 14, 0.03);
+        }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1e8d0; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #9a3412; border-radius: 4px; }
+    </style>
+</head>
+<body class="antialiased min-h-screen flex flex-col selection:bg-maya-600 selection:text-white">
+
+    <div class="maya-border-pattern w-full"></div>
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- HEADER NAVIGATION -->
+    <header class="bg-white/95 backdrop-blur-md border-b-2 border-maya-300 sticky top-0 z-40 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-20">
+                
+                <!-- LOGO -->
+                <div class="flex items-center space-x-3 sm:space-x-4">
+                    <div class="relative p-1 bg-maya-100 rounded-full border-2 border-maya-400 shadow-md flex-shrink-0 flex items-center justify-center w-12 h-12">
+                        <img src="logo-cc-cup.svg" alt="CC CUP XLI Logo" class="w-full h-full object-contain" onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 100\' fill=\'%239A3412\'><circle cx=\'50\' cy=\'50\' r=\'45\' fill=\'%23FBF4E2\' stroke=\'%239A3412\' stroke-width=\'5\'/><text x=\'50%\' y=\'55%\' text-anchor=\'middle\' font-weight=\'bold\' font-size=\'16\'>CC</text></svg>';">
+                    </div>
+                    <div>
+                        <div class="flex items-center space-x-2">
+                            <span class="font-cinzel font-black text-lg sm:text-2xl tracking-wider text-maya-900">
+                                CC CUP <span class="text-maya-600">XLI</span>
+                            </span>
+                            <span class="bg-maya-600 text-white text-[10px] sm:text-xs px-2.5 py-0.5 rounded-full font-bold shadow-sm">
+                                MAYAN FAIRPLAY
+                            </span>
+                        </div>
+                        <p class="text-[10px] sm:text-xs text-maya-800 font-semibold">Smart Portal Verifikasi Atlet & Penegakan SOP</p>
+                    </div>
+                </div>
+
+                <!-- Navigation Tabs (Desktop) -->
+                <nav class="hidden md:flex space-x-1.5 bg-maya-100 p-1.5 rounded-2xl border border-maya-300 shadow-inner">
+                    <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-btn px-4 py-2 rounded-xl text-xs font-bold font-cinzel transition duration-150 text-white bg-gradient-to-r from-maya-600 to-maya-700 shadow-md active:scale-95">
+                        <i class="fa-solid fa-chart-pie mr-1.5"></i> Dashboard
+                    </button>
+                    <button onclick="switchTab('sop')" id="nav-sop" class="nav-btn px-4 py-2 rounded-xl text-xs font-bold font-cinzel transition duration-150 text-maya-900 hover:text-maya-600 hover:bg-white active:scale-95">
+                        <i class="fa-solid fa-scroll mr-1.5"></i> SOP Interaktif & E-Pakta
+                    </button>
+                    <button onclick="switchTab('verification')" id="nav-verification" class="nav-btn px-4 py-2 rounded-xl text-xs font-bold font-cinzel transition duration-150 text-maya-900 hover:text-maya-600 hover:bg-white active:scale-95">
+                        <i class="fa-solid fa-id-card-clip mr-1.5"></i> Verifikasi Atlet
+                    </button>
+                    <button onclick="switchTab('whistleblowing')" id="nav-whistleblowing" class="nav-btn px-4 py-2 rounded-xl text-xs font-bold font-cinzel transition duration-150 text-maya-900 hover:text-maya-600 hover:bg-white active:scale-95">
+                        <i class="fa-solid fa-bullhorn mr-1.5"></i> Pos Aduan
+                    </button>
+                </nav>
+
+                <!-- Auth & Cloud Status Banner -->
+                <div class="flex items-center space-x-2 sm:space-x-3">
+                    <div id="cloudStatusBadge" class="hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 bg-rose-100 border border-rose-300 rounded-xl text-[11px] font-bold text-rose-800">
+                        <i class="fa-solid fa-cloud-slash"></i> <span>Offline (Lokal)</span>
+                    </div>
+
+                    <div id="roleBadge" class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-maya-100 border border-maya-300 rounded-xl text-xs font-bold text-maya-900">
+                        <i class="fa-solid fa-user-tag text-maya-600"></i> <span id="roleBadgeText">Viewer Mode</span>
+                    </div>
+
+                    <!-- Tombol Login Berubah Warna Dynamic -->
+                    <button id="authBtn" onclick="openLoginModal()" class="px-4 py-2 text-white font-bold font-cinzel text-xs rounded-xl shadow transition duration-150 ease-in-out transform active:scale-95 active:shadow-inner bg-maya-600 hover:bg-maya-700 active:bg-maya-800">
+                        <i class="fa-solid fa-right-to-bracket mr-1"></i> Login Portal
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs (Mobile) -->
+        <div class="md:hidden flex overflow-x-auto bg-maya-100 px-2 py-2 gap-1.5 border-t border-maya-300 custom-scrollbar">
+            <button onclick="switchTab('dashboard')" id="nav-mob-dashboard" class="nav-mob-btn text-xs whitespace-nowrap px-3.5 py-1.5 rounded-xl font-bold font-cinzel text-white bg-maya-600 shadow active:scale-95">Dashboard</button>
+            <button onclick="switchTab('sop')" id="nav-mob-sop" class="nav-mob-btn text-xs whitespace-nowrap px-3.5 py-1.5 rounded-xl font-bold font-cinzel text-maya-900 active:scale-95">SOP & Pakta</button>
+            <button onclick="switchTab('verification')" id="nav-mob-verification" class="nav-mob-btn text-xs whitespace-nowrap px-3.5 py-1.5 rounded-xl font-bold font-cinzel text-maya-900 active:scale-95">Verifikasi Atlet</button>
+            <button onclick="switchTab('whistleblowing')" id="nav-mob-whistleblowing" class="nav-mob-btn text-xs whitespace-nowrap px-3.5 py-1.5 rounded-xl font-bold font-cinzel text-maya-900 active:scale-95">Pos Aduan</button>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+        <!-- DASHBOARD TAB -->
+        <section id="tab-dashboard" class="space-y-6">
+            <div class="relative bg-gradient-to-r from-maya-100 via-white to-maya-200 rounded-3xl p-6 sm:p-8 border-2 border-maya-400 shadow-md overflow-hidden">
+                <div class="relative z-10 max-w-3xl">
+                    <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-maya-600 text-white mb-3 shadow-sm">
+                        <i class="fa-solid fa-sun text-amber-300"></i> ITG PPKn & PJOK — Kelompok 7
+                    </span>
+                    <h1 class="font-cinzel text-2xl sm:text-4xl font-black text-maya-900 tracking-wide leading-tight">
+                        Portal Digital FairPlay & Penegakan SOP CC CUP XLI
+                    </h1>
+                    <p class="mt-3 text-maya-900 text-xs sm:text-sm leading-relaxed font-medium">
+                        Solusi digital untuk pencegahan kelalaian validasi <strong class="text-maya-600">atlet profesional (Kejurnas/Kejurprov)</strong> serta integrasi aduan whistleblower secara real-time.
+                    </p>
+
+                    <div class="mt-6 flex flex-wrap gap-2.5 items-center">
+                        <span class="text-xs font-bold text-maya-900 font-cinzel w-full sm:w-auto">Dokumen SOP Resmi:</span>
+                        <button onclick="openSopModal('catur')" class="bg-white hover:bg-amber-50 text-amber-900 border-2 border-amber-400 font-bold px-3.5 py-2 rounded-xl text-xs transition flex items-center gap-1.5 shadow-sm active:scale-95">
+                            <i class="fa-solid fa-file-pdf text-amber-700"></i> Read SOP Catur
+                        </button>
+                        <button onclick="openSopModal('minisoccer')" class="bg-white hover:bg-rose-50 text-rose-900 border-2 border-rose-400 font-bold px-3.5 py-2 rounded-xl text-xs transition flex items-center gap-1.5 shadow-sm active:scale-95">
+                            <i class="fa-solid fa-file-pdf text-rose-700"></i> Read SOP Mini Soccer
+                        </button>
+                        <button onclick="openSopModal('badminton')" class="bg-white hover:bg-sky-50 text-sky-900 border-2 border-sky-400 font-bold px-3.5 py-2 rounded-xl text-xs transition flex items-center gap-1.5 shadow-sm active:scale-95">
+                            <i class="fa-solid fa-file-pdf text-sky-700"></i> Read SOP Bulutangkis
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="maya-card p-5 rounded-2xl">
+                    <p class="text-[10px] font-bold font-cinzel text-maya-700 uppercase">Total Peserta Terdata</p>
+                    <h3 class="text-2xl font-black font-cinzel text-maya-900 mt-1" id="stat-total">0 Peserta</h3>
+                </div>
+                <div class="maya-card p-5 rounded-2xl">
+                    <p class="text-[10px] font-bold font-cinzel text-emerald-800 uppercase">Lolos Verifikasi</p>
+                    <h3 class="text-2xl font-black font-cinzel text-emerald-700 mt-1" id="stat-verified">0 Atlet</h3>
+                </div>
+                <div class="maya-card p-5 rounded-2xl">
+                    <p class="text-[10px] font-bold font-cinzel text-rose-800 uppercase">Total Diskualifikasi</p>
+                    <h3 class="text-2xl font-black font-cinzel text-rose-700 mt-1" id="stat-disqualified">0 Kasus</h3>
+                </div>
+                <div class="maya-card p-5 rounded-2xl">
+                    <p class="text-[10px] font-bold font-cinzel text-amber-900 uppercase">Laporan Whistleblower</p>
+                    <h3 class="text-2xl font-black font-cinzel text-amber-700 mt-1" id="stat-reports">0 Laporan</h3>
+                </div>
+            </div>
+        </section>
+
+        <!-- INTERACTIVE SOP & E-PAKTA LOG TAB -->
+        <section id="tab-sop" class="space-y-6 hidden">
+            <div class="bg-white p-6 rounded-3xl border-2 border-maya-400 shadow-xl relative">
+                <div id="paktaLockOverlay" class="absolute inset-0 bg-white/80 backdrop-blur-sm z-20 rounded-3xl flex flex-col items-center justify-center p-6 text-center">
+                    <i class="fa-solid fa-lock text-3xl text-maya-600 mb-2"></i>
+                    <h4 class="font-cinzel font-bold text-base text-maya-900">Khusus Akses Peserta</h4>
+                    <p class="text-xs text-maya-800 max-w-md mt-1 mb-4">Silakan login sebagai Peserta (`peserta123`) untuk menandatangani E-Pakta Integritas Digital.</p>
+                    <button onclick="openLoginModal()" class="px-4 py-2 bg-maya-600 hover:bg-maya-700 text-white font-bold font-cinzel text-xs rounded-xl shadow active:scale-95 transition">
+                        🔑 Login Portal Peserta
+                    </button>
+                </div>
+
+                <h3 class="font-bold font-cinzel text-lg text-maya-900 mb-1">E-Pakta Integritas Digital Peserta</h3>
+                <p class="text-xs text-maya-800 font-semibold mb-4">Pernyataan mutlak bahwa peserta bukan atlet profesional dan bersedia menaati SOP.</p>
+
+                <div class="space-y-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <input type="text" id="pakta-nama" placeholder="Nama Kapten / Perwakilan Tim *" class="bg-white border-2 border-maya-300 text-xs rounded-xl p-3 text-maya-900 font-semibold">
+                        <input type="text" id="pakta-sekolah" placeholder="Asal Sekolah / Kontingen *" class="bg-white border-2 border-maya-300 text-xs rounded-xl p-3 text-maya-900 font-semibold">
+                        <input type="text" id="pakta-nik" placeholder="NIK / NISN Perwakilan *" class="bg-white border-2 border-maya-300 text-xs rounded-xl p-3 text-maya-900 font-semibold">
+                        <select id="pakta-cabor" class="bg-white border-2 border-maya-300 text-xs rounded-xl p-3 text-maya-900 font-bold">
+                            <option value="Catur">Catur</option>
+                            <option value="Badminton">Badminton</option>
+                            <option value="Mini Soccer">Mini Soccer</option>
+                        </select>
+                    </div>
+
+                    <label class="flex items-start gap-3 cursor-pointer p-3 bg-maya-50 rounded-xl border border-maya-300">
+                        <input type="checkbox" id="pakta-checkbox" class="mt-0.5 h-4 w-4 rounded border-maya-400 text-maya-600">
+                        <span class="text-xs text-maya-900 font-medium">Saya membaca SOP dan menyatakan tim kami <strong>BUKAN atlet pro</strong>.</span>
+                    </label>
+
+                    <button onclick="submitPakta()" class="w-full bg-gradient-to-r from-maya-600 to-maya-700 text-white font-bold font-cinzel py-3 rounded-xl text-xs sm:text-sm shadow-md active:scale-95 transition">
+                        ✍️ Tandatangani E-Pakta Integritas
+                    </button>
+                </div>
+            </div>
+
+            <div class="maya-card p-6 rounded-3xl space-y-4">
+                <h3 class="font-cinzel font-bold text-base text-maya-900">📋 Daftar Pendaftar Berhasil TTD E-Pakta Integritas</h3>
+                <div class="overflow-x-auto custom-scrollbar">
+                    <table class="w-full text-left text-xs text-maya-900">
+                        <thead class="bg-maya-100 uppercase font-cinzel font-black text-[10px] border-b-2 border-maya-300">
+                            <tr>
+                                <th class="p-3">Kapten / Manajer</th>
+                                <th class="p-3">Sekolah</th>
+                                <th class="p-3">NIK / NISN</th>
+                                <th class="p-3">Cabor</th>
+                                <th class="p-3 text-center">Status Pakta</th>
+                            </tr>
+                        </thead>
+                        <tbody id="paktaLogTableBody" class="divide-y divide-maya-200">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- VERIFIKASI ATLET TAB -->
+        <section id="tab-verification" class="space-y-6 hidden">
+            <div class="maya-card p-6 rounded-3xl relative">
+                <div id="adminNoticeBanner" class="p-3 bg-amber-100 border border-amber-300 rounded-2xl text-xs font-bold text-amber-900 mb-4 flex items-center justify-between">
+                    <span><i class="fa-solid fa-triangle-exclamation text-amber-700 mr-1.5"></i> Viewer/Peserta Mode: Tombol eksekusi dikunci. Login sebagai Admin (`admin123`) untuk mengubah sanksi.</span>
+                </div>
+
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-maya-300">
+                    <h2 class="text-xl font-black font-cinzel text-maya-900">Verifikasi & Status Kelayakan Atlet</h2>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <input type="text" id="searchPlayer" onkeyup="filterPlayers()" placeholder="Cari nama/sekolah..." class="px-3 py-2 text-xs border-2 border-maya-300 bg-white rounded-xl text-maya-900 font-semibold">
+                    </div>
+                </div>
+
+                <div class="mt-4 overflow-x-auto custom-scrollbar">
+                    <table class="w-full text-left text-xs text-maya-900">
+                        <thead class="bg-maya-100 uppercase font-cinzel font-black text-[10px] border-b-2 border-maya-300">
+                            <tr>
+                                <th class="p-3">Nama Pemain / Tim</th>
+                                <th class="p-3">Sekolah</th>
+                                <th class="p-3">Cabor</th>
+                                <th class="p-3">Riwayat Ditemukan</th>
+                                <th class="p-3">Status</th>
+                                <th class="p-3 text-center">Tindakan Panitia</th>
+                            </tr>
+                        </thead>
+                        <tbody id="playerTableBody" class="divide-y divide-maya-200 font-medium">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- POS ADUAN WHISTLEBLOWER TAB -->
+        <section id="tab-whistleblowing" class="space-y-6 hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="lg:col-span-1 maya-card p-6 rounded-3xl">
+                    <div class="mb-4">
+                        <span class="text-xs font-bold font-cinzel uppercase tracking-wider text-amber-900 bg-amber-100 px-3 py-1 rounded-md border border-amber-300">Pos Laporan Rahasia</span>
+                        <h2 class="text-lg font-bold font-cinzel text-maya-900 mt-2">Kirim Aduan Pelanggaran</h2>
+                    </div>
+
+                    <form id="reportForm" onsubmit="handleReportSubmit(event)" class="space-y-3 text-xs">
+                        <div>
+                            <label class="font-bold text-maya-900 block mb-1">Nama Pelapor (Opsional)</label>
+                            <input type="text" id="report-name" placeholder="Anonim / Pelapor" class="w-full p-2.5 bg-white border-2 border-maya-300 rounded-xl">
+                        </div>
+
+                        <div>
+                            <label class="font-bold text-maya-900 block mb-1">Pilih Peserta Terlapor (Aktif) *</label>
+                            <select id="report-target-select" required class="w-full p-2.5 bg-white border-2 border-maya-300 rounded-xl font-bold text-maya-900">
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="font-bold text-maya-900 block mb-1">Kategori Pelanggaran *</label>
+                            <select id="report-category" required class="w-full p-2.5 bg-white border-2 border-maya-300 rounded-xl font-bold">
+                                <option value="Pemain Pro / Kejurprov">Penggunaan Pemain Pro / Kejurprov</option>
+                                <option value="Provokasi Suporter">Provokasi Suporter / Keributan</option>
+                                <option value="Pelanggaran SOP Alat">Pelanggaran SOP Alat Elektronik</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="font-bold text-maya-900 block mb-1">Detail Kronologi & Temuan Bukti *</label>
+                            <textarea id="report-detail" rows="3" required placeholder="Tuliskan bukti kecurangan..." class="w-full p-2.5 bg-white border-2 border-maya-300 rounded-xl"></textarea>
+                        </div>
+
+                        <button type="submit" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold font-cinzel py-2.5 rounded-xl shadow active:scale-95 transition">
+                            🚨 Kirim Laporan Anonim
+                        </button>
+                    </form>
+                </div>
+
+                <div class="lg:col-span-2 maya-card p-6 rounded-3xl flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between pb-3 border-b-2 border-maya-300 mb-4">
+                            <h2 class="text-lg font-bold font-cinzel text-maya-900">Feed Whistleblower Real-Time</h2>
+                            <span class="text-xs bg-maya-100 text-maya-900 font-bold px-3 py-1 rounded-full border border-maya-300" id="reportCountBadge">0 Laporan</span>
+                        </div>
+                        <div id="reportsFeed" class="space-y-3 max-h-[460px] overflow-y-auto custom-scrollbar">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- MODAL LOGIN -->
+    <div id="loginModal" class="fixed inset-0 z-50 bg-maya-950/70 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-white border-4 border-maya-600 rounded-3xl max-w-md w-full p-6 shadow-2xl relative">
+            <button onclick="closeLoginModal()" class="absolute top-4 right-4 text-maya-900 font-bold text-xl">&times;</button>
+            <h3 class="font-cinzel font-black text-lg text-maya-900 mb-1">🔑 Login Portal CC CUP XLI</h3>
+
+            <div class="space-y-4 text-xs mt-4">
+                <div>
+                    <label class="block font-bold mb-1">Pilih Peran Akun:</label>
+                    <select id="loginRole" class="w-full p-2.5 border-2 border-maya-300 rounded-xl bg-maya-50 font-bold">
+                        <option value="peserta">Pendaftar / Tim Peserta</option>
+                        <option value="admin">Panitia CC CUP XLI (Admin)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block font-bold mb-1">Kata Sandi (Password):</label>
+                    <input type="password" id="loginPass" placeholder="Password..." class="w-full p-2.5 border-2 border-maya-300 rounded-xl bg-maya-50 font-semibold">
+                </div>
+                <button onclick="submitLogin()" class="w-full py-2.5 bg-maya-600 text-white font-bold font-cinzel rounded-xl shadow active:scale-95 transition">
+                    Masuk Portal
+                </button>
+            </div>
+
+            <div class="mt-4 p-3 bg-maya-100 border border-maya-300 rounded-xl text-[11px]">
+                <p class="font-bold text-maya-900">Pintasan Password Demo:</p>
+                <div class="flex gap-2 mt-1">
+                    <button onclick="fillAuthDemo('admin')" class="px-2 py-1 bg-amber-200 border border-amber-400 text-amber-950 font-bold rounded-lg active:scale-95">Admin (admin123)</button>
+                    <button onclick="fillAuthDemo('peserta')" class="px-2 py-1 bg-amber-200 border border-amber-400 text-amber-950 font-bold rounded-lg active:scale-95">Peserta (peserta123)</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL FULL SOP -->
+    <div id="sopModal" class="fixed inset-0 z-50 bg-maya-950/70 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-white border-2 border-maya-400 rounded-3xl max-w-3xl w-full max-h-[88vh] flex flex-col shadow-2xl overflow-hidden">
+            <div class="bg-maya-100 p-5 border-b-2 border-maya-300 flex items-center justify-between">
+                <h3 id="modalTitle" class="font-cinzel font-black text-lg text-maya-900">SOP Resmi</h3>
+                <button onclick="closeSopModal()" class="text-maya-900 font-bold text-xl">&times;</button>
+            </div>
+            <div id="modalBody" class="p-6 overflow-y-auto text-xs text-maya-900 space-y-4 custom-scrollbar"></div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC & CLOUD INTEGRATION -->
+    <script>
+        // ----------------------------------------------------
+        // 1. KONFIGURASI FIREBASE CLOUD DATABASE (PROYEK ITGKEL7)
+        // ----------------------------------------------------
+        const firebaseConfig = {
+            apiKey: "AIzaSyD1kVISv7JrCh8qjwK_dS1xYtl7HCEFRTk",
+            authDomain: "itgkel7.firebaseapp.com",
+            databaseURL: "https://itgkel7-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "itgkel7",
+            storageBucket: "itgkel7.firebasestorage.app",
+            messagingSenderId: "702472217818",
+            appId: "1:702472217818:web:63537537e2c9d9b0a931e3",
+            measurementId: "G-YEF0Y9QQQZ"
+        };
+
+        let db = null;
+        let isCloudConnected = false;
+
+        // Inisialisasi Firebase Cloud
+        try {
+            firebase.initializeApp(firebaseConfig);
+            db = firebase.firestore();
+            isCloudConnected = true;
+            console.log("✅ Terhubung ke Firebase Cloud Database itgkel7!");
+        } catch (err) {
+            console.error("⚠️ Gagal terhubung ke Firebase, menggunakan data lokal:", err);
+        }
+
+        // Data awal lokal (sebagai fallback jika database baru dibuat / kosong)
+        let playersData = [
+            { id: "1", name: "Dhanvant", school: "SMP Swasta A", nik: "317409123891001", cabor: "Catur", history: "Pemenang Kejurnas Catur Ke-51 Prov. Banten 2026", status: "FLAGGED" },
+            { id: "2", name: "Tim Roster Utama", school: "SMPK 2", nik: "317409123891002", cabor: "Badminton", history: "Membawa Pemain Riwayat Kejurprov & Absen TM", status: "DISQUALIFIED" },
+            { id: "3", name: "Tim Ganda Beregu", school: "Kristoforus 1", nik: "317409123891003", cabor: "Badminton", history: "Menyusupkan Pemain Atlet Kejurprov Diam-diam", status: "DISQUALIFIED" },
+            { id: "4", name: "Tim Futsal Utama", school: "SMPN 18", nik: "317409123891004", cabor: "Mini Soccer", history: "Siswa Aktif Reguler - Lolos Pakta Integritas", status: "VERIFIED" }
+        ];
+
+        let paktaLogData = [
+            { id: "p1", name: "Tim Futsal Utama", school: "SMPN 18", nik: "317409123891004", cabor: "Mini Soccer" }
+        ];
+
+        let reportsData = [
+            { id: "r101", targetId: "1", targetName: "Dhanvant (SMP Swasta A)", category: "Pemain Pro / Kejurprov", detail: "Terbukti menjuarai Kejurnas Catur Banten 2026.", time: "2 Jam lalu", status: "Selesai (Diskualifikasi)" },
+            { id: "r102", targetId: "2", targetName: "SMPK 2", category: "Penyusupan Pemain Pro", detail: "Membawa pemain eks Kejurprov.", time: "5 Jam lalu", status: "Selesai (Diskualifikasi)" }
+        ];
+
+        let currentRole = 'viewer'; 
+
+        const sopDocs = {
+            catur: { title: "SOP Catur", content: "<p class='font-bold'>Dilarang mendaftarkan pemain bergelar Master FIDE/Kejurnas.</p>" },
+            minisoccer: { title: "SOP Mini Soccer", content: "<p class='font-bold'>Suporter memicu kerusuhan diusir RADIUS MINIMAL 1.5 KM.</p>" },
+            badminton: { title: "SOP Bulutangkis", content: "<p class='font-bold'>Format Beregu 3 Ganda. Pemain PBSI/BWF dilarang keras.</p>" }
+        };
+
+        // ----------------------------------------------------
+        // 2. REALTIME LISTENERS CLOUD FIREBASE
+        // ----------------------------------------------------
+        function initCloudSync() {
+            updateCloudStatusUI();
+            if(!isCloudConnected) return;
+
+            // Sync Peserta Real-time
+            db.collection("players").onSnapshot(snapshot => {
+                if(!snapshot.empty) {
+                    playersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                }
+                applyRoleRestrictions();
+            }, err => {
+                console.warn("Firestore access error (players):", err);
+            });
+
+            // Sync Pakta Integritas Real-time
+            db.collection("pakta_logs").onSnapshot(snapshot => {
+                if(!snapshot.empty) {
+                    paktaLogData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                }
+                renderPaktaLogTable();
+            }, err => {
+                console.warn("Firestore access error (pakta):", err);
+            });
+
+            // Sync Aduan Whistleblower Real-time
+            db.collection("reports").orderBy("createdAt", "desc").onSnapshot(snapshot => {
+                if(!snapshot.empty) {
+                    reportsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                }
+                renderReportsFeed();
+                updateDashboardStats();
+            }, err => {
+                console.warn("Firestore access error (reports):", err);
+            });
+        }
+
+        function updateCloudStatusUI() {
+            const cloudBadge = document.getElementById('cloudStatusBadge');
+            if (!cloudBadge) return;
+
+            if (isCloudConnected) {
+                cloudBadge.className = "hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 bg-emerald-100 border border-emerald-300 rounded-xl text-[11px] font-bold text-emerald-800 shadow-sm";
+                cloudBadge.innerHTML = `<i class="fa-solid fa-cloud text-emerald-600"></i> <span>Cloud Realtime Aktif</span>`;
+            } else {
+                cloudBadge.className = "hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 bg-rose-100 border border-rose-300 rounded-xl text-[11px] font-bold text-rose-800";
+                cloudBadge.innerHTML = `<i class="fa-solid fa-cloud-slash"></i> <span>Offline (Lokal)</span>`;
+            }
+        }
+
+        // ----------------------------------------------------
+        // 3. SWITCH TAB & NAVIGATION STYLING (PERUBAHAN WARNA TOMBOL)
+        // ----------------------------------------------------
+        function switchTab(tabId) {
+            // Semuanya disembunyikan terlebih dahulu
+            document.querySelectorAll('main > section').forEach(sec => sec.classList.add('hidden'));
+            
+            const target = document.getElementById(`tab-${tabId}`);
+            if(target) target.classList.remove('hidden');
+
+            const tabs = ['dashboard', 'sop', 'verification', 'whistleblowing'];
+
+            // Perbarui gaya tombol navigasi Desktop
+            tabs.forEach(id => {
+                const btn = document.getElementById(`nav-${id}`);
+                if(btn) {
+                    if(id === tabId) {
+                        btn.className = "nav-btn px-4 py-2 rounded-xl text-xs font-bold font-cinzel transition duration-150 text-white bg-gradient-to-r from-maya-600 to-maya-700 shadow-md active:scale-95";
+                    } else {
+                        btn.className = "nav-btn px-4 py-2 rounded-xl text-xs font-bold font-cinzel transition duration-150 text-maya-900 hover:text-maya-600 hover:bg-white bg-transparent active:scale-95";
+                    }
+                }
+            });
+
+            // Perbarui gaya tombol navigasi Mobile
+            tabs.forEach(id => {
+                const mobBtn = document.getElementById(`nav-mob-${id}`);
+                if(mobBtn) {
+                    if(id === tabId) {
+                        mobBtn.className = "nav-mob-btn text-xs whitespace-nowrap px-3.5 py-1.5 rounded-xl font-bold font-cinzel text-white bg-maya-600 shadow active:scale-95";
+                    } else {
+                        mobBtn.className = "nav-mob-btn text-xs whitespace-nowrap px-3.5 py-1.5 rounded-xl font-bold font-cinzel text-maya-900 hover:bg-white bg-transparent active:scale-95";
+                    }
+                }
+            });
+        }
+
+        // ----------------------------------------------------
+        // 4. UI LOGIC & ROLE RESTRICTIONS
+        // ----------------------------------------------------
+        function applyRoleRestrictions() {
+            const paktaOverlay = document.getElementById('paktaLockOverlay');
+            const adminBanner = document.getElementById('adminNoticeBanner');
+            const badgeText = document.getElementById('roleBadgeText');
+            const authBtn = document.getElementById('authBtn');
+
+            // Reset Kelas Animasi & Warna Tombol Auth Top Bar
+            authBtn.className = "px-4 py-2 text-white font-bold font-cinzel text-xs rounded-xl shadow transition duration-150 ease-in-out transform active:scale-95 active:shadow-inner ";
+
+            if(currentRole === 'viewer') {
+                paktaOverlay.classList.remove('hidden');
+                adminBanner.classList.remove('hidden');
+                badgeText.innerText = 'Viewer Mode';
+                authBtn.className += "bg-maya-600 hover:bg-maya-700 active:bg-maya-800";
+                authBtn.innerHTML = `<i class="fa-solid fa-right-to-bracket mr-1"></i> Login Portal`;
+            } else if(currentRole === 'peserta') {
+                paktaOverlay.classList.add('hidden');
+                adminBanner.classList.remove('hidden');
+                badgeText.innerText = 'Peserta Mode';
+                authBtn.className += "bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800";
+                authBtn.innerHTML = `<i class="fa-solid fa-right-from-bracket mr-1"></i> Logout (Peserta)`;
+            } else if(currentRole === 'admin') {
+                paktaOverlay.classList.add('hidden');
+                adminBanner.classList.add('hidden');
+                badgeText.innerText = 'Admin Mode';
+                authBtn.className += "bg-rose-700 hover:bg-rose-800 active:bg-rose-900";
+                authBtn.innerHTML = `<i class="fa-solid fa-right-from-bracket mr-1"></i> Logout (Admin)`;
+            }
+
+            renderPlayersTable(playersData);
+            renderPaktaLogTable();
+            updateWhistleblowerDropdown();
+            renderReportsFeed();
+            updateDashboardStats();
+        }
+
+        function openLoginModal() {
+            if(currentRole !== 'viewer') {
+                currentRole = 'viewer';
+                applyRoleRestrictions();
+                showToast("Berhasil Logout", "info");
+                return;
+            }
+            document.getElementById('loginModal').classList.remove('hidden');
+        }
+
+        function closeLoginModal() { document.getElementById('loginModal').classList.add('hidden'); }
+
+        function fillAuthDemo(role) {
+            document.getElementById('loginRole').value = role;
+            document.getElementById('loginPass').value = role === 'admin' ? 'admin123' : 'peserta123';
+        }
+
+        function submitLogin() {
+            const role = document.getElementById('loginRole').value;
+            const pass = document.getElementById('loginPass').value;
+
+            if(role === 'admin' && pass === 'admin123') {
+                currentRole = 'admin';
+                showToast("Login Admin Berhasil!", "success");
+                closeLoginModal();
+            } else if(role === 'peserta' && pass === 'peserta123') {
+                currentRole = 'peserta';
+                showToast("Login Peserta Berhasil!", "success");
+                closeLoginModal();
+            } else {
+                showToast("Password Salah!", "error");
+            }
+            applyRoleRestrictions();
+        }
+
+        function renderPlayersTable(dataToRender) {
+            const tbody = document.getElementById('playerTableBody');
+            tbody.innerHTML = '';
+
+            dataToRender.forEach(player => {
+                let statusBadge = player.status === 'FLAGGED' ? `<span class="px-2 py-0.5 rounded bg-amber-100 text-amber-900 font-bold">⚠️ Review Pro</span>` :
+                                 (player.status === 'VERIFIED' ? `<span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 font-bold">✅ Lolos Reguler</span>` :
+                                 `<span class="px-2 py-0.5 rounded bg-rose-100 text-rose-900 font-bold">⛔ Didiskualifikasi</span>`);
+
+                let actionButtons = '';
+                if(currentRole === 'admin') {
+                    if(player.status !== 'DISQUALIFIED') {
+                        actionButtons = `<button onclick="changePlayerStatus('${player.id}', 'DISQUALIFIED')" class="px-2 py-1 bg-rose-700 text-white font-bold rounded text-[11px] active:scale-95 transition">Diskualifikasi</button>`;
+                    } else {
+                        actionButtons = `<span class="text-maya-500 font-bold italic">Terdiskualifikasi</span>`;
+                    }
+                } else {
+                    actionButtons = `<span class="text-maya-400 font-bold">🔒 Khusus Admin</span>`;
+                }
+
+                const tr = document.createElement('tr');
+                tr.className = "bg-white hover:bg-maya-100/50";
+                tr.innerHTML = `
+                    <td class="p-3 font-extrabold text-maya-900">${player.name}</td>
+                    <td class="p-3 font-semibold">${player.school}</td>
+                    <td class="p-3 font-bold">${player.cabor}</td>
+                    <td class="p-3 text-[11px]">${player.history}</td>
+                    <td class="p-3">${statusBadge}</td>
+                    <td class="p-3 text-center">${actionButtons}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderPaktaLogTable() {
+            const tbody = document.getElementById('paktaLogTableBody');
+            tbody.innerHTML = '';
+
+            paktaLogData.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.className = "bg-white hover:bg-maya-100/50";
+                tr.innerHTML = `
+                    <td class="p-3 font-bold">${item.name}</td>
+                    <td class="p-3 font-semibold">${item.school}</td>
+                    <td class="p-3">${item.nik}</td>
+                    <td class="p-3 font-bold">${item.cabor}</td>
+                    <td class="p-3 text-center"><span class="px-2 py-0.5 bg-green-100 text-green-800 font-bold rounded text-[10px]">Telah TTD E-Pakta</span></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function updateWhistleblowerDropdown() {
+            const select = document.getElementById('report-target-select');
+            select.innerHTML = '';
+
+            const activePlayers = playersData.filter(p => p.status !== 'DISQUALIFIED');
+            if(activePlayers.length === 0) {
+                select.innerHTML = `<option value="">-- Semua Peserta Telah Didiskualifikasi --</option>`;
+                return;
+            }
+
+            activePlayers.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.id;
+                opt.innerText = `${p.name} (${p.school}) - Cabor ${p.cabor}`;
+                select.appendChild(opt);
+            });
+        }
+
+        function renderReportsFeed() {
+            const container = document.getElementById('reportsFeed');
+            container.innerHTML = '';
+
+            reportsData.forEach(rep => {
+                const card = document.createElement('div');
+                card.className = "p-3 bg-white rounded-xl border border-maya-300 text-xs shadow-sm space-y-1.5";
+                
+                let adminActionBtn = '';
+                const targetPlayer = playersData.find(p => p.id === rep.targetId);
+                if(currentRole === 'admin' && targetPlayer && targetPlayer.status !== 'DISQUALIFIED') {
+                    adminActionBtn = `<button onclick="changePlayerStatus('${targetPlayer.id}', 'DISQUALIFIED')" class="mt-2 px-3 py-1 bg-rose-700 text-white font-bold rounded hover:bg-rose-800 active:scale-95 transition">
+                        🚨 Eksekusi Diskualifikasi Tim Terlapor
+                    </button>`;
+                }
+
+                card.innerHTML = `
+                    <div class="flex justify-between font-bold text-maya-900">
+                        <span class="text-amber-800"><i class="fa-solid fa-bullhorn mr-1"></i> Terlapor: ${rep.targetName}</span>
+                        <span class="text-[10px] text-maya-500">${rep.time || 'Baru saja'}</span>
+                    </div>
+                    <p class="text-maya-900 font-medium">${rep.detail}</p>
+                    <div class="flex justify-between items-center pt-1 text-[11px]">
+                        <span>Kategori: <strong>${rep.category}</strong></span>
+                        <span class="px-2 py-0.5 rounded bg-maya-100 font-bold">${rep.status}</span>
+                    </div>
+                    ${adminActionBtn}
+                `;
+                container.appendChild(card);
+            });
+
+            document.getElementById('reportCountBadge').innerText = `${reportsData.length} Laporan`;
+        }
+
+        // ----------------------------------------------------
+        // 5. SUBMIT & ACTION HANDLERS (LOCAL & CLOUD)
+        // ----------------------------------------------------
+        async function submitPakta() {
+            const nama = document.getElementById('pakta-nama').value.trim();
+            const sekolah = document.getElementById('pakta-sekolah').value.trim();
+            const nik = document.getElementById('pakta-nik').value.trim();
+            const cabor = document.getElementById('pakta-cabor').value;
+            const isChecked = document.getElementById('pakta-checkbox').checked;
+
+            if(!nama || !sekolah || !nik) {
+                showToast("Isi seluruh identitas!", "error");
+                return;
+            }
+            if(!isChecked) {
+                showToast("Centang persetujuan E-Pakta!", "error");
+                return;
+            }
+
+            const newPakta = { name: nama, school: sekolah, nik: nik, cabor: cabor, createdAt: new Date() };
+            const newPlayer = { name: nama, school: sekolah, nik: nik, cabor: cabor, history: "E-Pakta Ditandatangani Digital", status: "VERIFIED", createdAt: new Date() };
+
+            if(isCloudConnected) {
+                try {
+                    await db.collection("pakta_logs").add(newPakta);
+                    await db.collection("players").add(newPlayer);
+                } catch(e) {
+                    console.error("Firestore write failed, saving locally:", e);
+                    const idStr = Date.now().toString();
+                    paktaLogData.unshift({ id: idStr, ...newPakta });
+                    playersData.push({ id: idStr, ...newPlayer });
+                    applyRoleRestrictions();
+                }
+            } else {
+                const idStr = Date.now().toString();
+                paktaLogData.unshift({ id: idStr, ...newPakta });
+                playersData.push({ id: idStr, ...newPlayer });
+                applyRoleRestrictions();
+            }
+
+            showToast(`E-Pakta ${sekolah} Berhasil Disimpan!`, "success");
+
+            document.getElementById('pakta-nama').value = '';
+            document.getElementById('pakta-sekolah').value = '';
+            document.getElementById('pakta-nik').value = '';
+            document.getElementById('pakta-checkbox').checked = false;
+        }
+
+        async function handleReportSubmit(e) {
+            e.preventDefault();
+            const targetId = document.getElementById('report-target-select').value;
+            const category = document.getElementById('report-category').value;
+            const detail = document.getElementById('report-detail').value;
+            const reporterName = document.getElementById('report-name').value || "Anonim";
+
+            const player = playersData.find(p => p.id === targetId);
+            if(!player) {
+                showToast("Pilih peserta terlapor!", "error");
+                return;
+            }
+
+            const newReport = {
+                targetId: player.id,
+                targetName: `${player.name} (${player.school})`,
+                reporterName: reporterName,
+                category: category,
+                detail: detail,
+                time: "Baru saja",
+                status: "Dalam Penyelidikan Panitia",
+                createdAt: new Date()
+            };
+
+            if(isCloudConnected) {
+                try {
+                    await db.collection("reports").add(newReport);
+                } catch(e) {
+                    console.error("Firestore write failed, saving locally:", e);
+                    reportsData.unshift({ id: Date.now().toString(), ...newReport });
+                    renderReportsFeed();
+                    updateDashboardStats();
+                }
+            } else {
+                reportsData.unshift({ id: Date.now().toString(), ...newReport });
+                renderReportsFeed();
+                updateDashboardStats();
+            }
+
+            document.getElementById('reportForm').reset();
+            showToast("Laporan whistleblower berhasil dikirim!", "success");
+        }
+
+        async function changePlayerStatus(id, newStatus) {
+            if(isCloudConnected) {
+                try {
+                    await db.collection("players").doc(id).update({ status: newStatus });
+                } catch(e) {
+                    const player = playersData.find(p => p.id === id);
+                    if(player) {
+                        player.status = newStatus;
+                        applyRoleRestrictions();
+                    }
+                }
+            } else {
+                const player = playersData.find(p => p.id === id);
+                if(player) {
+                    player.status = newStatus;
+                    applyRoleRestrictions();
+                }
+            }
+            showToast(`Sanksi Diskualifikasi berhasil dieksekusi!`, 'success');
+        }
+
+        function updateDashboardStats() {
+            document.getElementById('stat-total').innerText = `${playersData.length} Peserta`;
+            document.getElementById('stat-verified').innerText = `${playersData.filter(p => p.status === 'VERIFIED').length} Atlet`;
+            document.getElementById('stat-disqualified').innerText = `${playersData.filter(p => p.status === 'DISQUALIFIED').length} Kasus`;
+            document.getElementById('stat-reports').innerText = `${reportsData.length} Laporan`;
+        }
+
+        function filterPlayers() {
+            const query = document.getElementById('searchPlayer').value.toLowerCase();
+            const filtered = playersData.filter(p => p.name.toLowerCase().includes(query) || p.school.toLowerCase().includes(query));
+            renderPlayersTable(filtered);
+        }
+
+        function openSopModal(caborKey) {
+            const doc = sopDocs[caborKey];
+            if(doc) {
+                document.getElementById('modalTitle').innerText = doc.title;
+                document.getElementById('modalBody').innerHTML = doc.content;
+                document.getElementById('sopModal').classList.remove('hidden');
+            }
+        }
+        function closeSopModal() { document.getElementById('sopModal').classList.add('hidden'); }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            let bgClass = type === 'success' ? "bg-emerald-800 text-white" : (type === 'error' ? "bg-rose-800 text-white" : "bg-maya-900 text-white");
+            toast.className = `pointer-events-auto flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-2xl text-xs font-bold ${bgClass}`;
+            toast.innerHTML = `<i class="fa-solid fa-circle-info"></i> <span>${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        window.onload = function() {
+            applyRoleRestrictions();
+            initCloudSync();
+        };
+    </script>
+</body>
+</html>
